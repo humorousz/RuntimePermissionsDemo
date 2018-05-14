@@ -4,11 +4,14 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.Toast;
@@ -89,15 +92,24 @@ public class PermissionUtils {
 //        }
 
         int checkSelfPermission;
+        int targetSdkVersion;
         try {
-            checkSelfPermission = ActivityCompat.checkSelfPermission(activity, requestPermission);
+            PackageInfo info = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
+            targetSdkVersion = info.applicationInfo.targetSdkVersion;
+            if (targetSdkVersion >= Build.VERSION_CODES.M) {
+                checkSelfPermission = ActivityCompat.checkSelfPermission(activity, requestPermission);
+            } else {
+                checkSelfPermission = PermissionChecker.checkSelfPermission(activity, requestPermission);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return;
         } catch (RuntimeException e) {
             Toast.makeText(activity, "please open this permission", Toast.LENGTH_SHORT)
                     .show();
             Log.e(TAG, "RuntimeException:" + e.getMessage());
             return;
         }
-
         if (checkSelfPermission != PackageManager.PERMISSION_GRANTED) {
             Log.i(TAG, "ActivityCompat.checkSelfPermission != PackageManager.PERMISSION_GRANTED");
 
